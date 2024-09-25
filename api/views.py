@@ -2,8 +2,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.decorators import api_view
 
-from .serializers import UserLoginSerializer
+from .serializers import UserLoginSerializer, UserRegisterSerializer
 
 class UserLoginAPIView(APIView):
     def post(self, request):
@@ -12,7 +13,7 @@ class UserLoginAPIView(APIView):
         data = {
             "email": email,
         }
-        
+
         serializer = UserLoginSerializer(data=data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
@@ -25,3 +26,21 @@ class UserLoginAPIView(APIView):
             "last_name": str(user.last_name),
             "id_user": str(user.id),
         }, status=status.HTTP_200_OK)
+
+@api_view(["POST"])
+def UserRegisterView(request):
+    email = request.data.get("email")
+    name = request.data.get("name")
+    last_name = request.data.get("last_name")
+
+    data = {
+        "name": name,
+        "last_name": last_name,
+        "email": email,
+    }
+
+    serializer = UserRegisterSerializer(data=data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
