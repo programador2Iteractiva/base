@@ -1,8 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from .models import User
-from rest_framework.response import Response
-from rest_framework import status
 
 class UserLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
