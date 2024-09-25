@@ -1,16 +1,19 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-
 from .models import User
-
-# Register your models here.
+from .forms import UserCreationForm, UserChangeForm
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
+    add_form = UserCreationForm  # Usar el formulario de creación personalizado
+    form = UserChangeForm        # Usar el formulario de cambio personalizado
+    model = User
+
     list_display = (
         "id",
         "name",
         "last_name",
+        "email",
         "is_active",
         "is_staff",
         "is_superuser",
@@ -21,7 +24,7 @@ class CustomUserAdmin(UserAdmin):
         "is_superuser",
         "groups",
     )
-    ordering = ["name"]
+    ordering = ["email"]
     readonly_fields = ["date_joined"]
     search_fields = ("name", "email")
 
@@ -32,14 +35,7 @@ class CustomUserAdmin(UserAdmin):
                 "fields": (
                     "name",
                     "last_name",
-                ),
-            },
-        ),
-        (
-            "Información de acceso",
-            {
-                "fields": (
-                    "email",
+                    "email",  # Solo pedir el email
                 ),
             },
         ),
@@ -55,6 +51,7 @@ class CustomUserAdmin(UserAdmin):
             },
         ),
     )
+
     fieldsets = (
         (
             "Información de acceso",
@@ -84,8 +81,3 @@ class CustomUserAdmin(UserAdmin):
             },
         ),
     )
-
-    class Meta:
-        ordering = "name"
-        verbose_name = "usuario"
-        verbose_name_plural = "usuarios"
