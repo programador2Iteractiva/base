@@ -17,6 +17,7 @@ class UserLoginAPIView(APIView):
             "email": email,
         }
         
+
         serializer = UserLoginSerializer(data=data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
