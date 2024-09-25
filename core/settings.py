@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "drf_yasg",
     "django_crontab",
+    "api",
 ]
 
 MIDDLEWARE = [
@@ -144,7 +145,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
 ]
 
-# AUTH_USER_MODEL = ""
+AUTH_USER_MODEL = "api.User"
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME' : timedelta(days=15),
