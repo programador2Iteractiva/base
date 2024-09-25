@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import User
+from .models import User, UserActionLog
 
 class UserLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -41,3 +41,17 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         user.set_password(validated_data["email"])
         user.save()
         return user
+
+
+class UserActionLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserActionLog
+        fields = ['action']
+        extra_kwargs = {
+            'user': {'required': False}
+        }
+
+    def create(self, validated_data):
+        user = validated_data.pop('user', None)
+        user_action_log = UserActionLog.objects.create(user=user, **validated_data)
+        return user_action_log
