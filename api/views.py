@@ -11,6 +11,8 @@ from .serializers import UserLoginSerializer, UserRegisterSerializer, UserAction
 logger = logging.getLogger('user_actions')
 
 class UserLoginAPIView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
         email = request.data.get("email")
         data = {
@@ -33,6 +35,8 @@ class UserLoginAPIView(APIView):
         }, status=status.HTTP_200_OK)
 
 class UserRegisterAPIView(APIView):
+    permission_classes = [AllowAny]
+    
     def post(self, request):
         email = request.data.get("email")
         name = request.data.get("name")
@@ -61,7 +65,7 @@ class UserActionLogCreateAPIView(APIView):
             user = request.user if request.user.is_authenticated else None
             action = serializer.validated_data.get('action', 'Acción sin especificar')
             
-            logger.info(f"Acción registrada: {action}", extra={'user': user})
+            logger.info(action, extra={'user': user})
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
