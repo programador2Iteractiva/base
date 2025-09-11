@@ -4,9 +4,15 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework import generics
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .serializers import UserLoginSerializer, UserRegisterSerializer, UserActionLogSerializer
+from .serializers import (
+    UserLoginSerializer, UserRegisterSerializer, UserActionLogSerializer,
+    EventSerializer, GuestSerializer, FileUploadSerializer,
+    FileUploadGuestSerializer, AttendanceLogSerializer, SendLogSerializer
+)
+from .models import Events, Guests, FileUpload, FileUploadGuest, AttendanceLog, SendLog
 
 logger = logging.getLogger('user_actions')
 
@@ -70,3 +76,52 @@ class UserActionLogCreateAPIView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# New Views
+class EventListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Events.objects.all()
+    serializer_class = EventSerializer
+
+class EventRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Events.objects.all()
+    serializer_class = EventSerializer
+
+class GuestListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Guests.objects.all()
+    serializer_class = GuestSerializer
+
+class GuestRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Guests.objects.all()
+    serializer_class = GuestSerializer
+
+class FileUploadListCreateAPIView(generics.ListCreateAPIView):
+    queryset = FileUpload.objects.all()
+    serializer_class = FileUploadSerializer
+
+class FileUploadRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = FileUpload.objects.all()
+    serializer_class = FileUploadSerializer
+
+class FileUploadGuestListCreateAPIView(generics.ListCreateAPIView):
+    queryset = FileUploadGuest.objects.all()
+    serializer_class = FileUploadGuestSerializer
+
+class FileUploadGuestRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = FileUploadGuest.objects.all()
+    serializer_class = FileUploadGuestSerializer
+
+class AttendanceLogListCreateAPIView(generics.ListCreateAPIView):
+    queryset = AttendanceLog.objects.all()
+    serializer_class = AttendanceLogSerializer
+
+class AttendanceLogRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = AttendanceLog.objects.all()
+    serializer_class = AttendanceLogSerializer
+
+class SendLogListCreateAPIView(generics.ListCreateAPIView):
+    queryset = SendLog.objects.all()
+    serializer_class = SendLogSerializer
+
+class SendLogRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = SendLog.objects.all()
+    serializer_class = SendLogSerializer

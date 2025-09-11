@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import User, UserActionLog
+from django.contrib.auth.models import User
+from .models import UserActionLog, Events, Guests, FileUpload, FileUploadGuest, AttendanceLog, SendLog
 
 class UserLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -55,3 +56,34 @@ class UserActionLogSerializer(serializers.ModelSerializer):
         user = validated_data.pop('user', None)
         user_action_log = UserActionLog.objects.create(user=user, **validated_data)
         return user_action_log
+
+# New Serializers
+class EventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Events
+        fields = '__all__'
+
+class GuestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Guests
+        fields = '__all__'
+
+class FileUploadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FileUpload
+        fields = '__all__'
+
+class FileUploadGuestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FileUploadGuest
+        fields = '__all__'
+
+class AttendanceLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AttendanceLog
+        fields = '__all__'
+
+class SendLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SendLog
+        fields = '__all__'
