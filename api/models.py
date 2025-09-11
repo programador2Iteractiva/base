@@ -1,3 +1,4 @@
+# api/models.py
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -19,7 +20,8 @@ class Events(models.Model):
 
 class Guests(models.Model):
     country = models.CharField(max_length=100, null=True, blank=True)
-    document_id = models.CharField(max_length=100, null=True, blank=True)
+    document_id = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    email = models.CharField(max_length=200, unique=True, null=False, blank=False)
     phone = models.CharField(max_length=25, null=True, blank=True)
     name = models.CharField(max_length=200)
     is_active = models.BooleanField(default=True)
@@ -34,6 +36,7 @@ class Guests(models.Model):
 
 class FileUpload(models.Model):
     title = models.CharField(max_length=250)
+    file = models.FileField(upload_to="uploads/")
     event = models.ForeignKey(Events, on_delete=models.CASCADE)
     is_processed = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
