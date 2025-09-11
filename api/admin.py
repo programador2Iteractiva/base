@@ -1,9 +1,18 @@
 from django.contrib import admin
 from django.urls import reverse
 from django.utils.html import format_html
+from django.conf import settings
 import openpyxl
 import os
+import qrcode
+from PIL import Image
+from datetime import datetime
 from .models import UserActionLog, Event, Guest, FileUpload, FileUploadGuest, Attendance, SendLog, EventGuest
+
+# Asegúrese de que la carpeta de QR exista
+QR_DIR = os.path.join(settings.MEDIA_ROOT, 'qr')
+if not os.path.exists(QR_DIR):
+    os.makedirs(QR_DIR)
 
 class FileUploadAdmin(admin.ModelAdmin):
     list_display = ("title", "event", "is_processed", "is_active", "created")
@@ -28,8 +37,8 @@ class FileUploadAdmin(admin.ModelAdmin):
                         email = row[3] if len(row) > 3 and row[3] is not None else ""
                         phone = row[4] if len(row) > 4 and row[4] is not None else ""
                         
-                        # Crear el objeto Guest
-                        guest, created = Guest.objects.get_or_create(
+                        # Crear el objeto Guests
+                        guest, created = Guests.objects.get_or_create(
                             email=email,
                             defaults={'name': guest_name, 'country': country, 'document_id': document_id, 'phone': phone}
                         )
@@ -64,8 +73,33 @@ class FileUploadAdmin(admin.ModelAdmin):
             super().save_model(request, obj, form, change)
 
 
+class EventAdmin(admin.ModelAdmin):
+    list_display = ("name", "date", "location", "is_active", "created")
+    actions = ["send_invitations"]
+
+    @admin.action(description="Enviar invitaciones (generar QR para los invitados seleccionados)")
+    def send_invitations(self, request, queryset):
+        total_qrs_generated = 0
+        for event in queryset:
+            guests = EventGuest.objects.filter(event=event).select_related('guest')
+            for event_guest in guests:
+                guest = event_guest.guest
+                # Contenido del QR: el ID del invitado
+                qr_data = str(guest.document_id)
+                qr_img = qrcode.make(qr_data)
+                
+                # Nombre del archivo QR
+                filename = f"{event.id}_{guest.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.png"
+                filepath = os.path.join(QR_DIR, filename)
+
+                # Guardar el QR en la carpeta media/qr
+                qr_img.save(filepath)
+                total_qrs_generated += 1
+        
+        self.message_user(request, f"{total_qrs_generated} códigos QR generados exitosamente.")
+        
 admin.site.register(UserActionLog)
-admin.site.register(Event)
+admin.site.register(Event, EventAdmin)
 admin.site.register(Guest)
 admin.site.register(FileUpload, FileUploadAdmin)
 admin.site.register(FileUploadGuest)
