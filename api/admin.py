@@ -77,7 +77,7 @@ class EventAdmin(admin.ModelAdmin):
     list_display = ("name", "date", "location", "is_active", "created")
     actions = ["send_invitations"]
 
-    @admin.action(description="Enviar invitaciones (generar QR para los invitados seleccionados)")
+    @admin.action(description="Enviar invitaciones (generar QR para los invitados)")
     def send_invitations(self, request, queryset):
         total_qrs_generated = 0
         for event in queryset:
