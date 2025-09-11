@@ -3,7 +3,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 import openpyxl
 import os
-from .models import UserActionLog, Events, Guests, FileUpload, FileUploadGuest, AttendanceLog, SendLog
+from .models import UserActionLog, Event, Guest, FileUpload, FileUploadGuest, Attendance, SendLog, EventGuest
 
 class FileUploadAdmin(admin.ModelAdmin):
     list_display = ("title", "event", "is_processed", "is_active", "created")
@@ -28,15 +28,18 @@ class FileUploadAdmin(admin.ModelAdmin):
                         email = row[3] if len(row) > 3 and row[3] is not None else ""
                         phone = row[4] if len(row) > 4 and row[4] is not None else ""
                         
-                        # Crear o actualizar el objeto Guests
-                        guest, created = Guests.objects.get_or_create(
-                            name=guest_name,
-                            country=country,
-                            document_id=document_id,
+                        # Crear el objeto Guest
+                        guest, created = Guest.objects.get_or_create(
                             email=email,
-                            phone=phone
+                            defaults={'name': guest_name, 'country': country, 'document_id': document_id, 'phone': phone}
                         )
-                        
+
+                        # Crear la relación EventGuest
+                        EventGuest.objects.get_or_create(
+                            event=obj.event,
+                            guest=guest,
+                        )
+
                         # Crear la relación FileUploadGuest
                         FileUploadGuest.objects.create(
                             guest=guest,
@@ -62,9 +65,10 @@ class FileUploadAdmin(admin.ModelAdmin):
 
 
 admin.site.register(UserActionLog)
-admin.site.register(Events)
-admin.site.register(Guests)
+admin.site.register(Event)
+admin.site.register(Guest)
 admin.site.register(FileUpload, FileUploadAdmin)
 admin.site.register(FileUploadGuest)
-admin.site.register(AttendanceLog)
+admin.site.register(EventGuest)
+admin.site.register(Attendance)
 admin.site.register(SendLog)

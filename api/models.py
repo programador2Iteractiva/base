@@ -1,9 +1,8 @@
-# api/models.py
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-class Events(models.Model):
+class Event(models.Model):
     name = models.CharField(max_length=250)
     date = models.DateTimeField()
     location = models.CharField(max_length=500, null=True, blank=True)
@@ -18,12 +17,12 @@ class Events(models.Model):
     class Meta:
         db_table = "events"
 
-class Guests(models.Model):
+class Guest(models.Model):
     country = models.CharField(max_length=100, null=True, blank=True)
-    document_id = models.CharField(max_length=100, unique=True, null=True, blank=True)
-    email = models.CharField(max_length=200, unique=True, null=False, blank=False)
+    document_id = models.CharField(max_length=100, null=True, blank=True)
     phone = models.CharField(max_length=25, null=True, blank=True)
     name = models.CharField(max_length=200)
+    email = models.CharField(max_length=200, null=False, blank=False)
     is_active = models.BooleanField(default=True)
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
@@ -36,8 +35,8 @@ class Guests(models.Model):
 
 class FileUpload(models.Model):
     title = models.CharField(max_length=250)
-    file = models.FileField(upload_to="uploads/")
-    event = models.ForeignKey(Events, on_delete=models.CASCADE)
+    file = models.FileField(upload_to="uploads/", null=True, blank=True)
+    event = models.ForeignKey(Event, on_delete=models.CASCADE)
     is_processed = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     created = models.DateTimeField(auto_now_add=True)
@@ -50,9 +49,11 @@ class FileUpload(models.Model):
         db_table = "file_upload"
 
 class FileUploadGuest(models.Model):
-    guest = models.ForeignKey(Guests, on_delete=models.CASCADE)
+    guest = models.ForeignKey(Guest, on_delete=models.CASCADE)
     fileupload = models.ForeignKey(FileUpload, on_delete=models.CASCADE)
+    is_active = models.BooleanField(default=True)
     created = models.DateTimeField(auto_now_add=True)
+    modified = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.guest.name} - {self.fileupload.title}"
@@ -60,10 +61,9 @@ class FileUploadGuest(models.Model):
     class Meta:
         db_table = "file_upload_guest"
 
-class AttendanceLog(models.Model):
-    event = models.ForeignKey(Events, on_delete=models.CASCADE)
-    guest = models.ForeignKey(Guests, on_delete=models.CASCADE)
-    status = models.BooleanField(default=False)
+class EventGuest(models.Model):
+    event = models.ForeignKey(Event, on_delete=models.CASCADE)
+    guest = models.ForeignKey(Guest, on_delete=models.CASCADE)
     is_active = models.BooleanField(default=True)
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
@@ -72,11 +72,23 @@ class AttendanceLog(models.Model):
         return f"{self.guest.name} - {self.event.name}"
 
     class Meta:
-        db_table = "attendance_log"
+        db_table = "event_guest"
+
+class Attendance(models.Model):
+    event_guest = models.OneToOneField(EventGuest, on_delete=models.CASCADE)
+    attended = models.BooleanField(default=False)
+    created = models.DateTimeField(auto_now_add=True)
+    modified = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.event_guest.guest.name} - {self.attended}"
+
+    class Meta:
+        db_table = "attendance"
 
 class SendLog(models.Model):
-    event = models.ForeignKey(Events, on_delete=models.CASCADE)
-    guest = models.ForeignKey(Guests, on_delete=models.CASCADE)
+    event = models.ForeignKey(Event, on_delete=models.CASCADE)
+    guest = models.ForeignKey(Guest, on_delete=models.CASCADE)
     action = models.CharField(max_length=200)
     type = models.CharField(max_length=200)
     is_active = models.BooleanField(default=True)

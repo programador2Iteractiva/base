@@ -10,9 +10,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import (
     UserLoginSerializer, UserRegisterSerializer, UserActionLogSerializer,
     EventSerializer, GuestSerializer, FileUploadSerializer,
-    FileUploadGuestSerializer, AttendanceLogSerializer, SendLogSerializer
+    FileUploadGuestSerializer, EventGuestSerializer, AttendanceSerializer, SendLogSerializer
 )
-from .models import Events, Guests, FileUpload, FileUploadGuest, AttendanceLog, SendLog
+from .models import Event, Guest, FileUpload, FileUploadGuest, EventGuest, Attendance, SendLog
 
 logger = logging.getLogger('user_actions')
 
@@ -79,19 +79,19 @@ class UserActionLogCreateAPIView(APIView):
 
 # New Views
 class EventListCreateAPIView(generics.ListCreateAPIView):
-    queryset = Events.objects.all()
+    queryset = Event.objects.all()
     serializer_class = EventSerializer
 
 class EventRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Events.objects.all()
+    queryset = Event.objects.all()
     serializer_class = EventSerializer
 
 class GuestListCreateAPIView(generics.ListCreateAPIView):
-    queryset = Guests.objects.all()
+    queryset = Guest.objects.all()
     serializer_class = GuestSerializer
 
 class GuestRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Guests.objects.all()
+    queryset = Guest.objects.all()
     serializer_class = GuestSerializer
 
 class FileUploadListCreateAPIView(generics.ListCreateAPIView):
@@ -110,13 +110,21 @@ class FileUploadGuestRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroy
     queryset = FileUploadGuest.objects.all()
     serializer_class = FileUploadGuestSerializer
 
-class AttendanceLogListCreateAPIView(generics.ListCreateAPIView):
-    queryset = AttendanceLog.objects.all()
-    serializer_class = AttendanceLogSerializer
+class EventGuestListCreateAPIView(generics.ListCreateAPIView):
+    queryset = EventGuest.objects.all()
+    serializer_class = EventGuestSerializer
 
-class AttendanceLogRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = AttendanceLog.objects.all()
-    serializer_class = AttendanceLogSerializer
+class EventGuestRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = EventGuest.objects.all()
+    serializer_class = EventGuestSerializer
+
+class AttendanceListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Attendance.objects.all()
+    serializer_class = AttendanceSerializer
+
+class AttendanceRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Attendance.objects.all()
+    serializer_class = AttendanceSerializer
 
 class SendLogListCreateAPIView(generics.ListCreateAPIView):
     queryset = SendLog.objects.all()
