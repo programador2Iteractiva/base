@@ -64,7 +64,6 @@ class FileUploadGuest(models.Model):
 class EventGuest(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
     guest = models.ForeignKey(Guest, on_delete=models.CASCADE)
-    is_active = models.BooleanField(default=True)
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
 
@@ -77,6 +76,7 @@ class EventGuest(models.Model):
 class Attendance(models.Model):
     event_guest = models.OneToOneField(EventGuest, on_delete=models.CASCADE)
     attended = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
 
