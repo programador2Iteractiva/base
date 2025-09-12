@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.urls import reverse
+from django.urls import reverse, path
 from django.utils.html import format_html
 from django.conf import settings
 import openpyxl
@@ -28,17 +28,25 @@ class FileUploadAdmin(admin.ModelAdmin):
                     workbook = openpyxl.load_workbook(obj.file.path)
                     sheet = workbook.active
                     
+                    guest_count = 0
+
                     # Iterar sobre las filas, omitiendo el encabezado
                     for row in sheet.iter_rows(min_row=2, values_only=True):
                         # Asignar valores de las columnas
+
+                        if row[3] is None or row[2] is None:
+                            continue
+
                         guest_name = row[0] if row[0] is not None else "Nombre no especificado"
                         country = row[1] if len(row) > 1 and row[1] is not None else ""
                         document_id = row[2] if len(row) > 2 and row[2] is not None else ""
                         email = row[3] if len(row) > 3 and row[3] is not None else ""
                         phone = row[4] if len(row) > 4 and row[4] is not None else ""
+
+                        guest_count += 1
                         
                         # Crear el objeto Guests
-                        guest, created = Guests.objects.get_or_create(
+                        guest, created = Guest.objects.get_or_create(
                             email=email,
                             defaults={'name': guest_name, 'country': country, 'document_id': document_id, 'phone': phone}
                         )
@@ -58,11 +66,21 @@ class FileUploadAdmin(admin.ModelAdmin):
                     # Marcar el archivo como procesado
                     obj.is_processed = True
                     obj.save()
+
+                    UserActionLog.objects.create(
+                        user=request.user,
+                        action = f"Cargue archivo {obj.title} con {guest_count} invitados"
+                    )
                     
                 except Exception as e:
                     obj.is_processed = False
                     obj.save()
-                    self.message_user(request, f"Error al procesar el archivo: {e}", level="ERROR")
+                    self.message_user(request, f"Error al procesar el archivo: {obj.title} {e}", level="ERROR")
+                    
+                    UserActionLog.objects.create(
+                        user=request.user,
+                        action = f"Error al procesar el archivo de cargue: {e}"
+                    )
                 
                 finally:
                     # Eliminar el archivo físico después de procesar
@@ -79,25 +97,37 @@ class EventAdmin(admin.ModelAdmin):
 
     @admin.action(description="Enviar invitaciones (generar QR para los invitados)")
     def send_invitations(self, request, queryset):
-        total_qrs_generated = 0
-        for event in queryset:
-            guests = EventGuest.objects.filter(event=event).select_related('guest')
-            for event_guest in guests:
-                guest = event_guest.guest
-                # Contenido del QR: el ID del invitado
-                qr_data = str(guest.document_id)
-                qr_img = qrcode.make(qr_data)
-                
-                # Nombre del archivo QR
-                filename = f"{event.id}_{guest.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.png"
-                filepath = os.path.join(QR_DIR, filename)
 
-                # Guardar el QR en la carpeta media/qr
-                qr_img.save(filepath)
-                total_qrs_generated += 1
-        
-        self.message_user(request, f"{total_qrs_generated} códigos QR generados exitosamente.")
-        
+        try:
+            total_qrs_generated = 0
+            for event in queryset:
+                guests = EventGuest.objects.filter(event=event).select_related('guest')
+                for event_guest in guests:
+                    guest = event_guest.guest
+                    # Contenido del QR: el ID del invitado
+                    qr_data = f"{str(guest.document_id)}#{str(event.id)}"
+                    qr_img = qrcode.make(qr_data)
+                    
+                    # Nombre del archivo QR
+                    filename = f"{event.id}_{guest.document_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.png"
+                    filepath = os.path.join(QR_DIR, filename)
+
+                    # Guardar el QR en la carpeta media/qr
+                    qr_img.save(filepath)
+                    total_qrs_generated += 1
+                    
+            UserActionLog.objects.create(
+                user=request.user,
+                action = f"{total_qrs_generated} invitaciones enviadas exitosamente."
+            )
+        except Exception as e:
+            self.message_user(request, f"Error al enviar invitaciones: {e}", level="ERROR")
+            UserActionLog.objects.create(
+                user=request.user,
+                action = f"Error al enviar invitaciones: {e}"
+            )
+
+
 admin.site.register(UserActionLog)
 admin.site.register(Event, EventAdmin)
 admin.site.register(Guest)
