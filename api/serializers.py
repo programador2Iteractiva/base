@@ -43,7 +43,6 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
-
 class UserActionLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserActionLog
@@ -57,7 +56,6 @@ class UserActionLogSerializer(serializers.ModelSerializer):
         user_action_log = UserActionLog.objects.create(user=user, **validated_data)
         return user_action_log
 
-# New Serializers
 class EventSerializer(serializers.ModelSerializer):
     class Meta:
         model = Event
@@ -92,3 +90,6 @@ class SendLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = SendLog
         fields = '__all__'
+
+class QRReaderSerializer(serializers.Serializer):
+    image = serializers.ImageField()

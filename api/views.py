@@ -6,11 +6,13 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import generics
 from rest_framework_simplejwt.tokens import RefreshToken
+from PIL import Image
+from pyzbar.pyzbar import decode
 
 from .serializers import (
     UserLoginSerializer, UserRegisterSerializer, UserActionLogSerializer,
     EventSerializer, GuestSerializer, FileUploadSerializer,
-    FileUploadGuestSerializer, EventGuestSerializer, AttendanceSerializer, SendLogSerializer
+    FileUploadGuestSerializer, EventGuestSerializer, AttendanceSerializer, SendLogSerializer,QRReaderSerializer
 )
 from .models import Event, Guest, FileUpload, FileUploadGuest, EventGuest, Attendance, SendLog
 
@@ -132,3 +134,98 @@ class SendLogListCreateAPIView(generics.ListCreateAPIView):
 class SendLogRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = SendLog.objects.all()
     serializer_class = SendLogSerializer
+
+class QRReaderAPIView(APIView):
+    permission_classes = [AllowAny]
+    
+    def post(self, request, *args, **kwargs):
+        serializer = QRReaderSerializer(data=request.data)
+        if serializer.is_valid():
+            image = serializer.validated_data['image']
+            
+            try:
+                # Abrir la imagen con Pillow
+                img = Image.open(image)
+                decoded_qrs = decode(img)
+                
+                if not decoded_qrs:
+                    return Response({"error_code":"IMAGE_IS_NOT_QR", "detail": "No se encontró ningún código QR en la imagen."}, status=status.HTTP_400_BAD_REQUEST)
+                
+                # Suponemos que el QR contiene el document_id del invitado
+                qr_data = decoded_qrs[0].data.decode('utf-8')
+                document_id,event_id = qr_data.split("#")
+
+                # Buscar al invitado por el ID del QR
+                guest = Guest.objects.get(document_id=document_id)
+                
+                # Buscar la relación EventGuest para este invitado
+                event_guest = EventGuest.objects.filter(guest=guest,event_id=event_id).first()
+
+                if event_guest is None:
+                    return Response({"error_code":"GUEST_NOT_IN_EVENT", "detail": "El invitado no está asociado a este evento."}, status=status.HTTP_404_NOT_FOUND)
+                
+                # Registrar o actualizar la asistencia
+                attendance, created = Attendance.objects.get_or_create(
+                    event_guest=event_guest,
+                    defaults={'attended': True}
+                )
+                if not created:
+                    # Si ya existía, se asegura de que attended sea True
+                    attendance.attended = True
+                    attendance.save()
+                
+                return Response({
+                    "message": f"Asistencia registrada para el invitado {guest.name} con ID {document_id}",
+                    "attended": attendance.attended
+                }, status=status.HTTP_200_OK)
+
+            except Guest.DoesNotExist:
+                return Response({"error_code":"GUEST_NOT_FOUND", "detail": f"No se encontró un invitado registrado con ese ID de documento."}, status=status.HTTP_404_NOT_FOUND)
+            except Exception as e:
+                return Response({"detail": f"Error al procesar el QR: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class GuestVerifyEventAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        document_id = request.query_params.get('document_id')
+        event_id = request.query_params.get('event_id')
+
+        if not document_id or not event_id:
+            return Response(
+                {"error_code":"MISSING_PARAMS" ,"detail": "Faltan parámetros: 'document_id' y 'event_id' son requeridos."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            event = Event.objects.get(id=event_id)
+            guest = Guest.objects.get(document_id=document_id)
+        except Event.DoesNotExist:
+            return Response({"error_code":"EVENT_NOT_FOUND" ,"detail": "No se encontró el evento."}, status=status.HTTP_404_NOT_FOUND)
+        except Guest.DoesNotExist:
+            return Response({"error_code":"GUEST_NOT_FOUND" ,"detail": "No se encontró un invitado registrado con ese ID de documento."}, status=status.HTTP_404_NOT_FOUND)
+        
+        try:
+            event_guest = EventGuest.objects.get(guest=guest, event=event)
+        except EventGuest.DoesNotExist:
+            guest_data = GuestSerializer(guest).data
+            return Response(
+                {"error_code":"GUEST_NOT_IN_EVENT", "detail": "El invitado no está asociado a este evento.", "guest": guest_data},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        attendance, created = Attendance.objects.get_or_create(
+            event_guest=event_guest,
+            defaults={'attended': True}
+        )
+        if not created and not attendance.attended:
+            attendance.attended = True
+            attendance.save()
+        
+        return Response({
+            "message": f"Asistencia registrada para el invitado {guest.name} con ID {document_id}",
+            "attended": attendance.attended,
+            "guest_name": guest.name
+        }, status=status.HTTP_200_OK)
