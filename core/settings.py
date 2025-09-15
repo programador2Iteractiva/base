@@ -159,8 +159,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:5173",
-    "https://admin.registro-eventos.interactiva.com.co/",
-    "https://registro-eventos.interactiva.com.co/",
+    "https://admin.registro-eventos.interactiva.com.co",
+    "https://registro-eventos.interactiva.com.co",
 ]
 
 SIMPLE_JWT = {
