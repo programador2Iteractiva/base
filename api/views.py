@@ -218,3 +218,56 @@ class GuestVerifyEventAPIView(APIView):
             "attended": attendance.attended,
             "guest_name": guest.name
         }, status=status.HTTP_200_OK)
+
+class GuestCreateView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        event_id = request.data.get("event_id")
+        guest_data = request.data.get("guest_data")
+
+        if not event_id or not guest_data:
+            return Response(
+                {"detail": "Faltan datos. Se requieren 'event_id' y 'guest_data'."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            event = Event.objects.get(id=event_id)
+        except Event.DoesNotExist:
+            return Response(
+                {"detail": f"El evento con id {event_id} no existe."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Crear o actualizar el invitado
+        guest_serializer = GuestSerializer(data=guest_data)
+        if guest_serializer.is_valid():
+            guest, created = Guest.objects.get_or_create(
+                email=guest_serializer.validated_data.get('email'),
+                defaults=guest_serializer.validated_data
+            )
+
+            # Crear la relación EventGuest
+            event_guest_data = {
+                'event': event.id,
+                'guest': guest.id,
+            }
+            event_guest_serializer = EventGuestSerializer(data=event_guest_data)
+            
+            if event_guest_serializer.is_valid():
+                event_guest, event_guest_created = EventGuest.objects.get_or_create(
+                    event=event,
+                    guest=guest,
+                )
+                
+                logger.info(f"Nuevo invitado {guest.name} asociado al evento {event.name}", extra={'user': request.user})
+
+                return Response({
+                    "guest": GuestSerializer(guest).data,
+                    "event_guest": EventGuestSerializer(event_guest).data
+                }, status=status.HTTP_201_CREATED)
+            else:
+                return Response(event_guest_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(guest_serializer.errors, status=status.HTTP_400_BAD_REQUEST)

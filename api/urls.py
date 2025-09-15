@@ -8,7 +8,7 @@ from .views import (
     EventGuestListCreateAPIView, EventGuestRetrieveUpdateDestroyAPIView,
     AttendanceListCreateAPIView, AttendanceRetrieveUpdateDestroyAPIView,
     SendLogListCreateAPIView, SendLogRetrieveUpdateDestroyAPIView,
-    GuestVerifyEventAPIView,QRContentReviewAPIView
+    GuestVerifyEventAPIView,QRContentReviewAPIView, GuestCreateView
 )
 
 urlpatterns = [
@@ -31,4 +31,5 @@ urlpatterns = [
     path("send-logs/<int:pk>/", SendLogRetrieveUpdateDestroyAPIView.as_view(), name="send-log-detail"),
     path("qr-verify/", QRContentReviewAPIView.as_view(), name="qr-verify"),
     path("guest-verify-event/", GuestVerifyEventAPIView.as_view(), name="guest-verify-event"),
+    path("create-guest-for-event/", GuestCreateView.as_view(), name="create-guest-for-event")
 ]
